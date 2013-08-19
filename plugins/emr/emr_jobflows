@@ -4,10 +4,11 @@ import os
 import sys
 import boto.emr
 import datetime
+import pytz
 
 def get_metrics( access_key_id, access_secret_key, region, time_range ):
     conn = boto.emr.connect_to_region(region, aws_access_key_id=access_key_id,aws_secret_access_key=access_secret_key)
-    created_after = datetime.datetime.today() - datetime.timedelta(minutes=time_range)
+    created_after = datetime.datetime.now(tz=pytz.timezone('GMT')) - datetime.timedelta(minutes=time_range)
     jobflows = conn.describe_jobflows( None, None, created_after, None )
     counter = {}
     total = 0
