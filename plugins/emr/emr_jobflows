@@ -1,0 +1,66 @@
+#!/usr/bin/python
+
+import os
+import sys
+import boto.emr
+import datetime
+
+def get_metrics( access_key_id, access_secret_key, region, time_range ):
+    conn = boto.emr.connect_to_region(region, aws_access_key_id=access_key_id,aws_secret_access_key=access_secret_key)
+    created_after = datetime.datetime.today() - datetime.timedelta(minutes=time_range)
+    jobflows = conn.describe_jobflows( None, None, created_after, None )
+    counter = {}
+    total = 0
+
+    for jobflow in jobflows:
+        total = total + 1
+        state = jobflow.state.lower()
+        if state in counter:
+            counter[state] = counter[state] + 1
+        else:
+            counter[state] = 1
+    return total, counter
+
+
+def munin( access_key_id, access_secret_key, region, time_range ):
+    total, counter = get_metrics( access_key_id, access_secret_key, region, time_range )
+    print "total.value " + str(total)
+    for state in states:
+        if state in counter:
+            print state + ".value " + str(counter[state])
+        else:
+            print state + ".value 0"
+
+
+def config():
+    print "graph_title emr jobflows count"
+    print "graph_category aws"
+    
+    print "total.label total"
+    print "total.draw LINE1"
+    for state in states:
+        print state + ".label " + state
+        print state + ".draw LINE1"
+
+
+states = ['starting', 'running', 'waiting', 'shutting_down', 'completed', 'failed', 'terminated']
+
+if __name__ == "__main__":
+    file_name = os.path.basename(__file__)
+    access_key_id = os.environ.get('access_key_id')
+    access_secret_key = os.environ.get('access_secret_key')
+    if os.environ.get('region'):
+        region = os.environ.get('region')
+    else: 
+        region = 'ap-northeast-1'
+    if os.environ.get('time_range'):
+        time_range = int(os.environ.get('time_range'))
+    else: 
+        time_range = 60
+    
+    if len(sys.argv) > 1 and sys.argv[1] == "config":
+        config()
+    else:
+        munin( access_key_id, access_secret_key, region, time_range )
+
+
