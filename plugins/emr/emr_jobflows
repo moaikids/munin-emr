@@ -25,7 +25,7 @@ def get_metrics( access_key_id, access_secret_key, region, time_range ):
 def munin( access_key_id, access_secret_key, region, time_range ):
     total, counter = get_metrics( access_key_id, access_secret_key, region, time_range )
     print "total.value " + str(total)
-    for state in states:
+    for state in states.iterkeys():
         if state in counter:
             print state + ".value " + str(counter[state])
         else:
@@ -38,12 +38,15 @@ def config():
     
     print "total.label total"
     print "total.draw LINE1"
-    for state in states:
+    for state, threshold in states.iteritems():
         print state + ".label " + state
         print state + ".draw LINE1"
+        if threshold:
+            print state + ".warning " + str( threshold )
+            print state + ".critical " + str( threshold )
 
 
-states = ['starting', 'running', 'waiting', 'shutting_down', 'completed', 'failed', 'terminated']
+states = {'starting': None , 'running': None, 'waiting':None, 'shutting_down':None, 'completed':None, 'failed':':1', 'terminated':None}
 
 if __name__ == "__main__":
     file_name = os.path.basename(__file__)
